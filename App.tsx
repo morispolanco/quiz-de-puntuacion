@@ -1,21 +1,40 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { quizData } from './constants/quizData';
 import QuestionCard from './components/QuestionCard';
 import QuizResult from './components/QuizResult';
 import ProgressBar from './components/ProgressBar';
+import QuestionNavigator from './components/QuestionNavigator';
 import { Question } from './types';
 
 const App: React.FC = () => {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [userAnswers, setUserAnswers] = useState<(number | null)[]>(Array(quizData.length).fill(null));
     const [score, setScore] = useState(0);
     const [quizFinished, setQuizFinished] = useState(false);
 
-    const handleAnswer = useCallback((isCorrect: boolean) => {
-        if (isCorrect) {
-            setScore(prevScore => prevScore + 1);
+    // Recalculate score whenever answers change
+    useEffect(() => {
+        const newScore = userAnswers.reduce((acc, answerIndex, questionIndex) => {
+            if (answerIndex !== null && answerIndex === quizData[questionIndex].correctAnswerIndex) {
+                return acc + 1;
+            }
+            return acc;
+        }, 0);
+        setScore(newScore);
+    }, [userAnswers]);
+
+
+    const handleAnswer = useCallback((selectedOptionIndex: number) => {
+        // Only allow answering once
+        if (userAnswers[currentQuestionIndex] === null) {
+            setUserAnswers(prevAnswers => {
+                const newAnswers = [...prevAnswers];
+                newAnswers[currentQuestionIndex] = selectedOptionIndex;
+                return newAnswers;
+            });
         }
-    }, []);
+    }, [currentQuestionIndex, userAnswers]);
 
     const handleNextQuestion = () => {
         const nextIndex = currentQuestionIndex + 1;
@@ -25,9 +44,16 @@ const App: React.FC = () => {
             setQuizFinished(true);
         }
     };
+    
+    const handleGoToQuestion = (index: number) => {
+        if (index >= 0 && index < quizData.length) {
+            setCurrentQuestionIndex(index);
+        }
+    };
 
     const restartQuiz = () => {
         setCurrentQuestionIndex(0);
+        setUserAnswers(Array(quizData.length).fill(null));
         setScore(0);
         setQuizFinished(false);
     };
@@ -46,12 +72,19 @@ const App: React.FC = () => {
                     ) : (
                         <>
                             <ProgressBar current={currentQuestionIndex + 1} total={quizData.length} />
+                            <QuestionNavigator
+                                total={quizData.length}
+                                current={currentQuestionIndex}
+                                onSelect={handleGoToQuestion}
+                                answers={userAnswers}
+                            />
                             <QuestionCard
                                 question={quizData[currentQuestionIndex] as Question}
                                 onAnswer={handleAnswer}
                                 onNext={handleNextQuestion}
                                 questionNumber={currentQuestionIndex + 1}
                                 totalQuestions={quizData.length}
+                                userAnswer={userAnswers[currentQuestionIndex]}
                             />
                         </>
                     )}

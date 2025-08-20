@@ -1,30 +1,22 @@
-import React, { useState, useEffect } from 'react';
+
+import React from 'react';
 import { Question } from '../types';
 
 interface QuestionCardProps {
     question: Question;
-    onAnswer: (isCorrect: boolean) => void;
+    onAnswer: (selectedOptionIndex: number) => void;
     onNext: () => void;
     questionNumber: number;
     totalQuestions: number;
+    userAnswer: number | null;
 }
 
-const QuestionCard: React.FC<QuestionCardProps> = ({ question, onAnswer, onNext, questionNumber, totalQuestions }) => {
-    const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
-    const [showFeedback, setShowFeedback] = useState(false);
-    
-    useEffect(() => {
-        setSelectedAnswerIndex(null);
-        setShowFeedback(false);
-    }, [question]);
+const QuestionCard: React.FC<QuestionCardProps> = ({ question, onAnswer, onNext, questionNumber, totalQuestions, userAnswer }) => {
+    const selectedAnswerIndex = userAnswer;
+    const showFeedback = userAnswer !== null;
 
     const handleOptionClick = (index: number) => {
-        if (selectedAnswerIndex !== null) return;
-
-        const isCorrect = index === question.correctAnswerIndex;
-        setSelectedAnswerIndex(index);
-        onAnswer(isCorrect);
-        setShowFeedback(true);
+        onAnswer(index);
     };
 
     const getOptionClass = (index: number) => {
@@ -47,7 +39,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question, onAnswer, onNext,
 
     return (
         <div className="flex flex-col animate-fade-in">
-            <h2 className="text-xl font-semibold mb-1 text-slate-800">Pregunta {question.id}</h2>
+            <h2 className="text-xl font-semibold mb-1 text-slate-800">Pregunta {questionNumber}</h2>
             <p className="text-lg leading-relaxed mb-6">{question.question}</p>
             
             <div className="space-y-3">
@@ -57,6 +49,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ question, onAnswer, onNext,
                         onClick={() => handleOptionClick(index)}
                         disabled={selectedAnswerIndex !== null}
                         className={`w-full text-left p-4 rounded-lg border-2 border-transparent transition-all duration-300 ${getOptionClass(index)}`}
+                        aria-pressed={selectedAnswerIndex === index}
                     >
                         <span className="font-semibold mr-2">{String.fromCharCode(97 + index)})</span> {option}
                     </button>
